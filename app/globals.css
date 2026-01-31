@@ -1,26 +1,225 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-background: #f5f5f0;
+  --color-foreground: #0a0a0a;
+  --color-accent: #0a0a0a;
+  --color-accent-hover: #1a1a1a;
+  --color-border: #0a0a0a;
+  --color-card: #ffffff;
+  --color-muted: #6b6b6b;
+  --color-error: #dc2626;
+  --color-success: #16a34a;
+  --color-warning: #ca8a04;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  min-height: 100vh;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Neo-Brutalism Components */
+
+.axium-card {
+  background-color: var(--color-card);
+  border: 3px solid var(--color-border);
+  box-shadow: 6px 6px 0px 0px var(--color-border);
+  transition: all 0.15s ease;
+}
+
+.axium-card-hover:hover {
+  box-shadow: 4px 4px 0px 0px var(--color-border);
+  transform: translate(2px, 2px);
+}
+
+.axium-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background-color: var(--color-card);
+  border: 3px solid var(--color-border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.875rem;
+  transition: box-shadow 0.15s ease;
+}
+
+.axium-input:focus {
+  outline: none;
+  box-shadow: 4px 4px 0px 0px var(--color-border);
+}
+
+.axium-input::placeholder {
+  color: var(--color-muted);
+  font-family: 'Inter', sans-serif;
+}
+
+.axium-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.axium-button {
+  padding: 0.875rem 1.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  background-color: var(--color-accent);
+  color: var(--color-card);
+  border: 3px solid var(--color-border);
+  box-shadow: 4px 4px 0px 0px var(--color-border);
+  transition: all 0.1s ease;
+}
+
+.axium-button:hover:not(:disabled) {
+  box-shadow: 2px 2px 0px 0px var(--color-border);
+  transform: translate(2px, 2px);
+}
+
+.axium-button:active:not(:disabled) {
+  box-shadow: 0px 0px 0px 0px var(--color-border);
+  transform: translate(4px, 4px);
+}
+
+.axium-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.axium-button-secondary {
+  padding: 0.75rem 1.25rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  background-color: var(--color-card);
+  color: var(--color-foreground);
+  border: 3px solid var(--color-border);
+  box-shadow: 3px 3px 0px 0px var(--color-border);
+  transition: all 0.1s ease;
+}
+
+.axium-button-secondary:hover {
+  box-shadow: 1px 1px 0px 0px var(--color-border);
+  transform: translate(2px, 2px);
+}
+
+.axium-select {
+  padding: 0.75rem 1rem;
+  background-color: var(--color-card);
+  border: 3px solid var(--color-border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.875rem;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230a0a0a' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+}
+
+.axium-select:focus {
+  outline: none;
+  box-shadow: 4px 4px 0px 0px var(--color-border);
+}
+
+.axium-checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 3px solid var(--color-border);
+  background-color: var(--color-card);
+  cursor: pointer;
+  appearance: none;
+  position: relative;
+}
+
+.axium-checkbox:checked {
+  background-color: var(--color-accent);
+}
+
+.axium-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.axium-progress {
+  height: 1.5rem;
+  background-color: var(--color-card);
+  border: 3px solid var(--color-border);
+  overflow: hidden;
+}
+
+.axium-progress-bar {
+  height: 100%;
+  background-color: var(--color-accent);
+  transition: width 0.3s ease;
+}
+
+.axium-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-muted);
+}
+
+.axium-status {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.axium-link {
+  font-family: 'JetBrains Mono', monospace;
+  word-break: break-all;
+}
+
+/* Drop Zone */
+.axium-dropzone {
+  border: 3px dashed var(--color-border);
+  background-color: var(--color-card);
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.axium-dropzone:hover,
+.axium-dropzone.active {
+  border-style: solid;
+  box-shadow: 6px 6px 0px 0px var(--color-border);
+}
+
+.axium-dropzone.active {
+  background-color: var(--color-background);
+}
+
+/* Timer */
+.axium-timer {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
 }
