@@ -1,10 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getFileBySlug, updateFile, deleteFile } from '@/lib/storage';
 import { getPresignedDownloadUrl, deleteObject } from '@/lib/b2';
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/rateLimit';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 'unknown';
+    const rateLimitResult = checkRateLimit(
+      getRateLimitKey(ip, 'download'),
+      RATE_LIMITS.download
+    );
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: 'RATE LIMIT EXCEEDED. TRY AGAIN LATER.' },
+        { status: 429 }
+      );
+    }
+
     const { slug, password } = await request.json();
 
     if (!slug) {
@@ -15,9 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find the file
-    const file = await prisma.file.findUnique({
-      where: { slug },
-    });
+    const file = await getFileBySlug(slug);
 
     if (!file) {
       return NextResponse.json(
@@ -27,11 +41,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if expired
-    if (new Date() > file.expiresAt) {
-      // Clean up expired file
+    if (new Date() > new Date(file.expiresAt)) {
+      // Clean up expired file (this might be handled by cleanup cron, but redundant check)
       try {
         await deleteObject(file.b2ObjectKey);
-        await prisma.file.delete({ where: { slug } });
+        await deleteFile(slug);
       } catch (e) {
         console.error('Cleanup error:', e);
       }
@@ -81,10 +95,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Increment download count
-    await prisma.file.update({
-      where: { slug },
-      data: { downloadCount: file.downloadCount + 1 },
-    });
+    await updateFile(slug, { downloadCount: file.downloadCount + 1 });
 
     // If one-time download, schedule deletion
     if (file.oneTimeDownload) {
@@ -92,7 +103,7 @@ export async function POST(request: NextRequest) {
       setTimeout(async () => {
         try {
           await deleteObject(file.b2ObjectKey);
-          await prisma.file.delete({ where: { slug } });
+          await deleteFile(slug);
         } catch (e) {
           console.error('One-time cleanup error:', e);
         }
@@ -125,19 +136,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const file = await prisma.file.findUnique({
-    where: { slug },
-    select: {
-      originalName: true,
-      size: true,
-      expiresAt: true,
-      passwordHash: true,
-      downloadCount: true,
-      oneTimeDownload: true,
-      maxDownloads: true,
-      createdAt: true,
-    },
-  });
+  const file = await getFileBySlug(slug);
 
   if (!file) {
     return NextResponse.json(
@@ -147,7 +146,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Check if expired
-  if (new Date() > file.expiresAt) {
+  if (new Date() > new Date(file.expiresAt)) {
     return NextResponse.json(
       { error: 'FILE EXPIRED' },
       { status: 410 }
@@ -172,7 +171,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     filename: file.originalName,
     size: file.size.toString(),
-    expiresAt: file.expiresAt.toISOString(),
+    expiresAt: file.expiresAt,
     requiresPassword: !!file.passwordHash,
     downloadCount: file.downloadCount,
     oneTimeDownload: file.oneTimeDownload,

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { createFile, getFileBySlug, slugExists } from '@/lib/storage';
 import { getPresignedUploadUrl, generateObjectKey } from '@/lib/b2';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/rateLimit';
 import { nanoid } from 'nanoid';
 import bcrypt from 'bcryptjs';
+import { FileMetadata } from '@/lib/storage';
 
 const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || '524288000'); // 500MB default
 const ALLOWED_EXPIRY = [10, 60, 120]; // minutes
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
       }
       
       // Check if slug already exists
-      const existing = await prisma.file.findUnique({ where: { slug } });
+      const existing = await slugExists(slug);
       if (existing) {
         return NextResponse.json(
           { error: 'SLUG ALREADY TAKEN' },
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
       slug = generateSlug();
       // Ensure uniqueness
       let attempts = 0;
-      while (await prisma.file.findUnique({ where: { slug } })) {
+      while (await slugExists(slug)) {
         slug = generateSlug();
         attempts++;
         if (attempts > 10) {
@@ -119,27 +120,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate expiry time
-    const expiresAt = new Date(Date.now() + body.expiryMinutes * 60 * 1000);
+    const expiresAt = new Date(Date.now() + body.expiryMinutes * 60 * 1000).toISOString();
 
-    // Create database record
-    await prisma.file.create({
-      data: {
-        slug,
-        b2ObjectKey: objectKey,
-        originalName: body.filename,
-        size: BigInt(body.size),
-        mimeType: body.contentType,
-        expiresAt,
-        passwordHash,
-        oneTimeDownload: body.oneTimeDownload || false,
-        maxDownloads: body.maxDownloads || null,
-      },
+    // Create database record (using in-memory storage for demo)
+    await createFile({
+      id: slug, // Using slug as ID for simplicity in in-memory store
+      slug,
+      b2ObjectKey: objectKey,
+      originalName: body.filename,
+      size: body.size,
+      mimeType: body.contentType,
+      expiresAt,
+      passwordHash,
+      oneTimeDownload: body.oneTimeDownload || false,
+      maxDownloads: body.maxDownloads || null,
+      downloadCount: 0,
     });
 
     return NextResponse.json({
       uploadUrl,
       slug,
-      expiresAt: expiresAt.toISOString(),
+      expiresAt,
     });
 
   } catch (error) {

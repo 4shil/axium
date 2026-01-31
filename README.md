@@ -26,7 +26,7 @@ AXIUM is a minimalist web app for temporary file sharing. Upload a file, get a l
 
 - **Frontend:** Next.js 15, React 19, Tailwind CSS
 - **Storage:** Backblaze B2 (S3-compatible)
-- **Database:** SQLite (Prisma ORM)
+- **Database:** In-memory (for demo) / Redis recommended for production
 - **Design:** Neo-Brutalism
 
 ## Self-Hosting
@@ -63,13 +63,7 @@ B2_APP_KEY="your_app_key"
 B2_BUCKET="your-bucket-name"
 ```
 
-5. Initialize the database:
-```bash
-npx prisma generate
-npx prisma db push
-```
-
-6. Run development server:
+5. Run development server:
 ```bash
 npm run dev
 ```
@@ -81,15 +75,20 @@ npm run dev
 3. Create an Application Key with read/write access to your bucket
 4. Note down: Endpoint, Key ID, Application Key, Bucket Name
 
-### Production Deployment
+### Production Deployment (Render)
 
-Deploy to Vercel:
+1. Connect your GitHub repository to Render
+2. Create a new Web Service
+3. Add environment variables:
+   - `B2_ENDPOINT`
+   - `B2_REGION`
+   - `B2_KEY_ID`
+   - `B2_APP_KEY`
+   - `B2_BUCKET`
+   - `CRON_SECRET` (for cleanup endpoint)
+4. Deploy!
 
-1. Connect your GitHub repository
-2. Add environment variables in Vercel dashboard
-3. Deploy
-
-The cleanup cron job runs every 15 minutes to delete expired files.
+For cleanup, set up a cron job to call `/api/cleanup` with `Authorization: Bearer <CRON_SECRET>` every 15 minutes.
 
 ## Configuration
 
@@ -113,7 +112,7 @@ Backblaze B2 (Object Storage)
 AXIUM API (Next.js)
     │
     ▼
-SQLite / PostgreSQL
+In-Memory Store / Redis
 ```
 
 **Key principle:** Files never pass through the backend server. The backend only handles authorization, metadata, and presigned URL generation.
