@@ -1,25 +1,25 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-// B2 configuration from environment variables
-const B2_ENDPOINT = process.env.B2_ENDPOINT || '';
-const B2_REGION = process.env.B2_REGION || 'eu-central-003';
-const B2_KEY_ID = process.env.B2_KEY_ID || '';
-const B2_APP_KEY = process.env.B2_APP_KEY || '';
-const B2_BUCKET = process.env.B2_BUCKET || 'axium-files';
+// S3 configuration from environment variables
+const AWS_REGION = process.env.AWS_REGION || 'us-east-1';
+const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || '';
+const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || '';
+const AWS_S3_BUCKET = process.env.AWS_S3_BUCKET || 'axium-files';
+const AWS_S3_ENDPOINT = process.env.AWS_S3_ENDPOINT; // Optional, for S3-compatible services
 
-// Create S3 client for B2
+// Create S3 client
 const s3Client = new S3Client({
-  endpoint: `https://${B2_ENDPOINT}`,
-  region: B2_REGION,
+  ...(AWS_S3_ENDPOINT && { endpoint: `https://${AWS_S3_ENDPOINT}` }),
+  region: AWS_REGION,
   credentials: {
-    accessKeyId: B2_KEY_ID,
-    secretAccessKey: B2_APP_KEY,
+    accessKeyId: AWS_ACCESS_KEY_ID,
+    secretAccessKey: AWS_SECRET_ACCESS_KEY,
   },
 });
 
 /**
- * Generate a presigned URL for uploading a file directly to B2
+ * Generate a presigned URL for uploading a file directly to S3
  */
 export async function getPresignedUploadUrl(
   objectKey: string,
@@ -27,7 +27,7 @@ export async function getPresignedUploadUrl(
   expiresIn: number = 3600 // 1 hour default
 ): Promise<string> {
   const command = new PutObjectCommand({
-    Bucket: B2_BUCKET,
+    Bucket: AWS_S3_BUCKET,
     Key: objectKey,
     ContentType: contentType,
   });
@@ -36,7 +36,7 @@ export async function getPresignedUploadUrl(
 }
 
 /**
- * Generate a presigned URL for downloading a file from B2
+ * Generate a presigned URL for downloading a file from S3
  */
 export async function getPresignedDownloadUrl(
   objectKey: string,
@@ -44,7 +44,7 @@ export async function getPresignedDownloadUrl(
   expiresIn: number = 300 // 5 minutes default
 ): Promise<string> {
   const command = new GetObjectCommand({
-    Bucket: B2_BUCKET,
+    Bucket: AWS_S3_BUCKET,
     Key: objectKey,
     ResponseContentDisposition: `attachment; filename="${encodeURIComponent(originalFilename)}"`,
   });
@@ -53,11 +53,11 @@ export async function getPresignedDownloadUrl(
 }
 
 /**
- * Delete a file from B2
+ * Delete a file from S3
  */
 export async function deleteObject(objectKey: string): Promise<void> {
   const command = new DeleteObjectCommand({
-    Bucket: B2_BUCKET,
+    Bucket: AWS_S3_BUCKET,
     Key: objectKey,
   });
 

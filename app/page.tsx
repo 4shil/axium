@@ -27,7 +27,7 @@ export default function Home() {
   const [password, setPassword] = useState('');
   const [oneTimeDownload, setOneTimeDownload] = useState(false);
   const [maxDownloads, setMaxDownloads] = useState<number | null>(null);
-  
+
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -65,16 +65,16 @@ export default function Home() {
       });
 
       const initData = await initRes.json();
-      
+
       if (!initRes.ok) {
         throw new Error(initData.error || 'UPLOAD FAILED');
       }
 
       setProgress(10);
 
-      // Step 2: Upload file directly to B2
+      // Step 2: Upload file directly to S3
       const xhr = new XMLHttpRequest();
-      
+
       await new Promise<void>((resolve, reject) => {
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) {
@@ -137,13 +137,13 @@ export default function Home() {
   // Success state
   if (result) {
     const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/${result.slug}`;
-    
+
     return (
       <main className="min-h-screen flex items-center justify-center p-4">
         <div className="axium-card p-8 max-w-lg w-full space-y-6 text-center">
           <div className="text-6xl">✓</div>
           <h2 className="font-mono text-2xl font-black">FILE UPLOADED</h2>
-          
+
           <div className="space-y-2">
             <p className="axium-label">SHARE LINK</p>
             <div className="axium-input axium-link text-left break-all">

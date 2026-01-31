@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getExpiredFiles, deleteFile, getFileBySlug } from '@/lib/storage';
-import { deleteObject } from '@/lib/b2';
+import { deleteObject } from '@/lib/s3';
 
 // This endpoint should be called by a cron job or scheduled task
 // Protected by CRON_SECRET environment variable
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   // Verify cron secret
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
-  
+
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json(
       { error: 'UNAUTHORIZED' },
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const now = new Date();
-    
+
     // Find all expired files
     const expiredFiles = await getExpiredFiles();
 
@@ -34,14 +34,14 @@ export async function GET(request: NextRequest) {
     // Delete each expired file
     for (const file of expiredFiles) {
       results.processed++;
-      
+
       try {
-        // Delete from B2
-        await deleteObject(file.b2ObjectKey);
-        
+        // Delete from S3
+        await deleteObject(file.s3ObjectKey);
+
         // Delete from storage
         await deleteFile(file.slug);
-        
+
         results.deleted++;
         console.log(`[CLEANUP] Purged: ${file.slug}`);
       } catch (error) {

@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFileBySlug, updateFile, deleteFile } from '@/lib/storage';
-import { getPresignedDownloadUrl, deleteObject } from '@/lib/b2';
+import { getPresignedDownloadUrl, deleteObject } from '@/lib/s3';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/rateLimit';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
-               request.headers.get('x-real-ip') || 'unknown';
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ||
+      request.headers.get('x-real-ip') || 'unknown';
     const rateLimitResult = checkRateLimit(
       getRateLimitKey(ip, 'download'),
       RATE_LIMITS.download
     );
-    
+
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         { error: 'RATE LIMIT EXCEEDED. TRY AGAIN LATER.' },
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (new Date() > new Date(file.expiresAt)) {
       // Clean up expired file (this might be handled by cleanup cron, but redundant check)
       try {
-        await deleteObject(file.b2ObjectKey);
+        await deleteObject(file.s3ObjectKey);
         await deleteFile(slug);
       } catch (e) {
         console.error('Cleanup error:', e);
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
           { status: 401 }
         );
       }
-      
+
       const passwordValid = await bcrypt.compare(password, file.passwordHash);
       if (!passwordValid) {
         return NextResponse.json(
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     // Generate presigned download URL
     const downloadUrl = await getPresignedDownloadUrl(
-      file.b2ObjectKey,
+      file.s3ObjectKey,
       file.originalName
     );
 
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       // Delete after a short delay to allow download to start
       setTimeout(async () => {
         try {
-          await deleteObject(file.b2ObjectKey);
+          await deleteObject(file.s3ObjectKey);
           await deleteFile(slug);
         } catch (e) {
           console.error('One-time cleanup error:', e);

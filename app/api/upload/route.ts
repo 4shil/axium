@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createFile, getFileBySlug, slugExists } from '@/lib/storage';
-import { getPresignedUploadUrl, generateObjectKey } from '@/lib/b2';
+import { getPresignedUploadUrl, generateObjectKey } from '@/lib/s3';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/rateLimit';
 import { nanoid } from 'nanoid';
 import bcrypt from 'bcryptjs';
@@ -32,13 +32,13 @@ function generateSlug(): string {
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
-               request.headers.get('x-real-ip') || 'unknown';
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ||
+      request.headers.get('x-real-ip') || 'unknown';
     const rateLimitResult = checkRateLimit(
       getRateLimitKey(ip, 'upload'),
       RATE_LIMITS.upload
     );
-    
+
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         { error: 'RATE LIMIT EXCEEDED. TRY AGAIN LATER.' },
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body: UploadRequest = await request.json();
-    
+
     // Validate required fields
     if (!body.filename || !body.size || !body.contentType) {
       return NextResponse.json(
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      
+
       // Check if slug already exists
       const existing = await slugExists(slug);
       if (existing) {
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Generate object key for B2
+    // Generate object key for S3
     const objectKey = generateObjectKey(slug, body.filename);
 
     // Generate presigned upload URL
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
     await createFile({
       id: slug, // Using slug as ID for simplicity in in-memory store
       slug,
-      b2ObjectKey: objectKey,
+      s3ObjectKey: objectKey,
       originalName: body.filename,
       size: body.size,
       mimeType: body.contentType,

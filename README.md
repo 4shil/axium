@@ -14,7 +14,7 @@ AXIUM is a minimalist web app for temporary file sharing. Upload a file, get a l
 ## Features
 
 - Drag & drop file upload
-- Direct upload to Backblaze B2 (files never touch the server)
+- Direct upload to Amazon S3 (files never touch the server)
 - Configurable expiry: 10 min, 1 hour, 2 hours
 - Custom shareable links
 - Password protection
@@ -25,7 +25,7 @@ AXIUM is a minimalist web app for temporary file sharing. Upload a file, get a l
 ## Tech Stack
 
 - **Frontend:** Next.js 15, React 19, Tailwind CSS
-- **Storage:** Backblaze B2 (S3-compatible)
+- **Storage:** Amazon S3
 - **Database:** In-memory (for demo) / Redis recommended for production
 - **Design:** Neo-Brutalism
 
@@ -34,7 +34,7 @@ AXIUM is a minimalist web app for temporary file sharing. Upload a file, get a l
 ### Prerequisites
 
 - Node.js 20+
-- Backblaze B2 account (free tier: 10GB)
+- AWS account with S3 access
 
 ### Setup
 
@@ -54,13 +54,13 @@ npm install
 cp .env.example .env
 ```
 
-4. Configure `.env` with your Backblaze B2 credentials:
+4. Configure `.env` with your AWS S3 credentials:
 ```env
-B2_ENDPOINT="s3.your-region.backblazeb2.com"
-B2_REGION="your-region"
-B2_KEY_ID="your_key_id"
-B2_APP_KEY="your_app_key"
-B2_BUCKET="your-bucket-name"
+AWS_REGION="us-east-1"
+AWS_ACCESS_KEY_ID="your_access_key_id"
+AWS_SECRET_ACCESS_KEY="your_secret_access_key"
+AWS_S3_BUCKET="your-bucket-name"
+# AWS_S3_ENDPOINT="(optional, for S3-compatible services)"
 ```
 
 5. Run development server:
@@ -68,23 +68,23 @@ B2_BUCKET="your-bucket-name"
 npm run dev
 ```
 
-### Backblaze B2 Setup
+### Amazon S3 Setup
 
-1. Create account at [backblaze.com](https://www.backblaze.com/sign-up/cloud-storage)
-2. Create a **private** bucket
-3. Create an Application Key with read/write access to your bucket
-4. Note down: Endpoint, Key ID, Application Key, Bucket Name
+1. Sign in to the [AWS Console](https://aws.amazon.com/console/)
+2. Create a new S3 bucket (private recommended)
+3. Create an IAM user with S3 read/write permissions for your bucket
+4. Generate access keys for the IAM user
+5. Note down: Region, Access Key ID, Secret Access Key, Bucket Name
 
 ### Production Deployment (Render)
 
 1. Connect your GitHub repository to Render
 2. Create a new Web Service
 3. Add environment variables:
-   - `B2_ENDPOINT`
-   - `B2_REGION`
-   - `B2_KEY_ID`
-   - `B2_APP_KEY`
-   - `B2_BUCKET`
+   - `AWS_REGION`
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+   - `AWS_S3_BUCKET`
    - `CRON_SECRET` (for cleanup endpoint)
 4. Deploy!
 
@@ -95,7 +95,7 @@ For cleanup, set up a cron job to call `/api/cleanup` with `Authorization: Beare
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `MAX_FILE_SIZE` | Maximum upload size in bytes | 524288000 (500MB) |
-| `B2_BUCKET` | Backblaze B2 bucket name | axium-files |
+| `AWS_S3_BUCKET` | Amazon S3 bucket name | axium-files |
 | `CRON_SECRET` | Secret for cleanup endpoint | (none) |
 
 ## Architecture
@@ -105,7 +105,7 @@ Client (Browser)
     │
     │ presigned upload URL
     ▼
-Backblaze B2 (Object Storage)
+Amazon S3 (Object Storage)
     │
     │ metadata only
     ▼

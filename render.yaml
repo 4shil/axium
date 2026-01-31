@@ -8,15 +8,13 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: B2_ENDPOINT
+      - key: AWS_REGION
         sync: false
-      - key: B2_REGION
+      - key: AWS_ACCESS_KEY_ID
         sync: false
-      - key: B2_KEY_ID
+      - key: AWS_SECRET_ACCESS_KEY
         sync: false
-      - key: B2_APP_KEY
-        sync: false
-      - key: B2_BUCKET
+      - key: AWS_S3_BUCKET
         sync: false
       - key: CRON_SECRET
         generateValue: true

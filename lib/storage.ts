@@ -7,7 +7,7 @@ import path from 'path';
 export interface FileMetadata {
   id: string;
   slug: string;
-  b2ObjectKey: string;
+  s3ObjectKey: string;
   originalName: string;
   size: number;
   mimeType: string | null;
@@ -38,7 +38,7 @@ export async function getFileBySlug(slug: string): Promise<FileMetadata | null> 
 export async function updateFile(slug: string, updates: Partial<FileMetadata>): Promise<FileMetadata | null> {
   const existing = memoryStore.get(slug);
   if (!existing) return null;
-  
+
   const updated = { ...existing, ...updates };
   memoryStore.set(slug, updated);
   return updated;
@@ -51,13 +51,13 @@ export async function deleteFile(slug: string): Promise<boolean> {
 export async function getExpiredFiles(): Promise<FileMetadata[]> {
   const now = new Date();
   const expired: FileMetadata[] = [];
-  
+
   for (const file of memoryStore.values()) {
     if (new Date(file.expiresAt) <= now) {
       expired.push(file);
     }
   }
-  
+
   return expired;
 }
 
