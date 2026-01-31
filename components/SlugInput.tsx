@@ -12,7 +12,7 @@ const SLUG_REGEX = /^[a-z0-9-]*$/;
 const MIN_LENGTH = 6;
 const MAX_LENGTH = 30;
 
-export default function SlugInput({ value, onChange, baseUrl = 'axium.app' }: SlugInputProps) {
+export default function SlugInput({ value, onChange, baseUrl = 'axium-vvwg.onrender.com' }: SlugInputProps) {
   const [error, setError] = useState<string | null>(null);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
