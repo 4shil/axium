@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getPresignedUploadUrl, generateObjectKey } from '@/lib/b2';
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/rateLimit';
 import { nanoid } from 'nanoid';
 import bcrypt from 'bcryptjs';
 
@@ -29,6 +30,21 @@ function generateSlug(): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 'unknown';
+    const rateLimitResult = checkRateLimit(
+      getRateLimitKey(ip, 'upload'),
+      RATE_LIMITS.upload
+    );
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: 'RATE LIMIT EXCEEDED. TRY AGAIN LATER.' },
+        { status: 429 }
+      );
+    }
+
     const body: UploadRequest = await request.json();
     
     // Validate required fields
